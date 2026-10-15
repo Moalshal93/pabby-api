@@ -1,4 +1,3 @@
-import asyncio
 import httpx
 from scrapy import Selector
 from fastapi import FastAPI, Request
@@ -127,12 +126,9 @@ async def fetch_listing(session: httpx.AsyncClient, customer_name: str):
 
 
 
-async def fetch_leads(session: httpx.AsyncClient, add_PSQ=False):
+async def fetch_leads(session: httpx.AsyncClient):
 
-    if not isinstance(add_PSQ, bool):
-        add_PSQ = False
-
-    leads_type_list = ["LEAD", "PSQ LEAD"] if add_PSQ else ["LEAD"]
+    leads_type_list = ["LEAD", "PSQ LEAD"]
     
     r = await session.get("https://partner.elliemd.com/MemberToolsDotNet/Reports/FirestormPersonalCustomers.aspx")
     sel = Selector(text=r.text)
@@ -391,7 +387,6 @@ async def fetch_lead(request: Request):
     body = await request.json()
     username = body.get("username")
     password = body.get("password")
-    add_PSQ = body.get("add_PSQ", False)
     retries = 3
     for attempt in range(retries):
         try:
@@ -405,12 +400,10 @@ async def fetch_lead(request: Request):
                 if result.get("status"):
                     print("Login successful, fetching leads...")
                     leads = await fetch_leads(
-                        session, add_PSQ
+                        session
                     )
                     return leads
         except:
             print(f"Attempt {attempt + 1} failed, retrying...")
             if attempt == retries - 1:
                 return {"error": "Failed to fetch invoice after multiple attempts"}
-            
-            
